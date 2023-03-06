@@ -107,7 +107,7 @@ for e in tqdm(range(epochs)):
         n_element += 1
         mean_loss += (loss.item() - mean_loss) / n_element
 
-    if not e % 10:
+    if not e % 500:
         writer.add_scalar("lr", schedule(e), e)
         writer.add_scalar("reverb_decay", model.reverb.decay.item(), e)
         writer.add_scalar("reverb_wet", model.reverb.wet.item(), e)
@@ -116,16 +116,16 @@ for e in tqdm(range(epochs)):
             best_loss = mean_loss
             torch.save(
                 model.state_dict(),
-                path.join(args.ROOT, args.NAME, "state.pth"),
+                path.join(args.ROOT, args.NAME, "checkpoints", f"state-{step}.pth"),
             )
 
         mean_loss = 0
         n_element = 0
 
-        audio = torch.cat([s, y], -1).reshape(-1).detach().cpu().numpy()
+        audio = torch.cat([y, s], -1).reshape(-1).detach().cpu().numpy()
         
         sf.write(
-            path.join(args.ROOT, args.NAME, f"eval_{e:06d}.wav"),
+            path.join(args.ROOT, args.NAME, f"eval_{e:08d}.wav"),
             audio,
             config["preprocess"]["sampling_rate"],
         )
