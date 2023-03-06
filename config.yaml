@@ -3,9 +3,9 @@ data:
   extension: "wav"
 
 preprocess:
-  sampling_rate: &samplingrate 16000
-  signal_length: &signallength 64000
-  block_size: &blocksize 160 # must be a power of 2 if using realtime
+  sampling_rate: &samplingrate 44100
+  signal_length: &signallength 176400
+  block_size: &blocksize 441 # must be a power of 2 if using realtime
 
   oneshot: false # crop every audio file to exactly signal length
   out_dir: ./preprocessed/
