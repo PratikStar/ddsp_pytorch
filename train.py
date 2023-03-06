@@ -11,8 +11,9 @@ import soundfile as sf
 from einops import rearrange
 from ddsp.utils import get_scheduler
 import numpy as np
+import wandb
 
-
+wandb.init(project=f"ddsp-pytorch", entity='auditory-grounding')
 class args(Config):
     CONFIG = "config.yaml"
     NAME = "debug"
@@ -100,7 +101,7 @@ for e in tqdm(range(epochs)):
         opt.step()
 
         writer.add_scalar("loss", loss.item(), step)
-
+        wandb.log({"loss": loss.item(), "step": step})
         step += 1
 
         n_element += 1
@@ -122,7 +123,7 @@ for e in tqdm(range(epochs)):
         n_element = 0
 
         audio = torch.cat([s, y], -1).reshape(-1).detach().cpu().numpy()
-
+        
         sf.write(
             path.join(args.ROOT, args.NAME, f"eval_{e:06d}.wav"),
             audio,
