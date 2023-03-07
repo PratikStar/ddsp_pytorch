@@ -5,7 +5,6 @@
 #PJM -j
 
 source /work/01/gk77/k77021/.bashrc
-echo "loaded source"
 export HOME=/work/01/gk77/k77021
 #pip install -r requirements.txt
 

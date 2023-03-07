@@ -98,12 +98,12 @@ class DDSP(nn.Module):
         noise = fft_convolve(noise, impulse).contiguous()
         noise = noise.reshape(noise.shape[0], -1, 1)
 
-        signal = harmonic + noise
+        harmonic_plus_noise = harmonic + noise
 
         #reverb part
-        signal = self.reverb(signal)
+        signal = self.reverb(harmonic_plus_noise)
 
-        return signal, harmonic, noise
+        return signal, harmonic, noise, harmonic_plus_noise
 
     def realtime_forward(self, pitch, loudness):
         hidden = torch.cat([

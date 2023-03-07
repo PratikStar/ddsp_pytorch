@@ -93,10 +93,11 @@ for e in tqdm(range(epochs)):
 
         l = (l - mean_loudness) / std_loudness
 
-        y, harmonic, noise = model(p, l)
+        y, harmonic, noise, harmonic_plus_noise = model(p, l)
         y = y.squeeze(-1)
         harmonic = harmonic.squeeze(-1)
         noise = noise.squeeze(-1)
+        harmonic_plus_noise = harmonic_plus_noise.squeeze(-1)
 
         ori_stft = multiscale_fft(
             s,
@@ -145,14 +146,21 @@ for e in tqdm(range(epochs)):
                 path.join(PATH_CHECKPOINTS, f"state-best.pth"),
             )
 
+            artifact = wandb.Artifact(f"{args.NAME}-{e}", type='model')
+            artifact.add_file(path.join(PATH_CHECKPOINTS, f"state-{e}.pth"))
+            artifact.add_file(path.join(PATH_CHECKPOINTS, f"state-best.pth"))
+            wandb.log_artifact(artifact)
+
         mean_loss = 0
         n_element = 0
 
-        for b in range(5):
-            audio = torch.cat([y[b, :], s[b, :], harmonic[b, :], noise[b, :]], -1).reshape(-1).detach().cpu().numpy()
-
+        for b in range(3):
+            audio = torch.cat([y[b, :], s[b, :], harmonic[b, :], noise[b, :], harmonic_plus_noise[b, :]], -1).reshape(-1).detach().cpu().numpy()
+            audio_path = path.join(args.ROOT, args.NAME, f"eval_{e:06d}-{b:02d}.wav")
             sf.write(
-                path.join(args.ROOT, args.NAME, f"eval_{e:06d}-{b:02d}.wav"),
+                audio_path,
                 audio,
                 config["preprocess"]["sampling_rate"],
             )
+            wandb.log(
+                {f"eval_{e:06d}-{b:02d}": wandb.Audio(audio, caption=f"Resynthized - original - harmonic - noise - harmonic_plus_noise", sample_rate=config["preprocess"]["sampling_rate"])})
