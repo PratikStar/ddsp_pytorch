@@ -12,8 +12,12 @@ from einops import rearrange
 from ddsp.utils import get_scheduler
 import numpy as np
 import wandb
+from pathlib import Path
+from datetime import datetime
 
 wandb.init(project=f"ddsp-pytorch", entity='auditory-grounding')
+
+
 class args(Config):
     CONFIG = "config.yaml"
     NAME = "debug"
@@ -25,23 +29,33 @@ class args(Config):
     DECAY_OVER = 400000
 
 
+# Config related
 args.parse_args()
-
 with open(args.CONFIG, "r") as config:
     config = yaml.safe_load(config)
 
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+print(f"Device: {device}")
 
+PATH_CHECKPOINTS = path.join(args.ROOT, args.NAME, "checkpoints")
+Path(PATH_CHECKPOINTS).mkdir(parents=True, exist_ok=True)
+
+# Model related
 model = DDSP(**config["model"]).to(device)
+if config["train"]["load_checkpoint"] and path.exists(path.join(PATH_CHECKPOINTS, "state-best.pth")):
+    print(f"Loading the model from: {path.join(PATH_CHECKPOINTS, 'state-best.pth')}")
+    model.load_state_dict(torch.load(path.join(PATH_CHECKPOINTS, "state-best.pth")))
 
+# Data related
 dataset = Dataset(config["preprocess"]["out_dir"])
-
 dataloader = torch.utils.data.DataLoader(
     dataset,
     args.BATCH,
     True,
     drop_last=True,
 )
+print(f"Total steps: {args.STEPS}")
+print(f"len(dataloader): {len(dataloader)}")
 
 mean_loudness, std_loudness = mean_std_loudness(dataloader)
 config["data"]["mean_loudness"] = mean_loudness
@@ -68,8 +82,10 @@ mean_loss = 0
 n_element = 0
 step = 0
 epochs = int(np.ceil(args.STEPS / len(dataloader)))
+print(f"Epochs: {epochs}")
 
 for e in tqdm(range(epochs)):
+    start = datetime.now()
     for s, p, l in dataloader:
         s = s.to(device)
         p = p.unsqueeze(-1).to(device)
@@ -101,13 +117,17 @@ for e in tqdm(range(epochs)):
         opt.step()
 
         writer.add_scalar("loss", loss.item(), step)
-        wandb.log({"loss": loss.item(), "step": step})
+        wandb.log({"loss": loss.item(),
+                   "step": step,
+                   "seconds_per_step": (datetime.now() - start).seconds
+                   })
         step += 1
 
         n_element += 1
         mean_loss += (loss.item() - mean_loss) / n_element
+    wandb.log({"seconds_per_epoch": (datetime.now() - start).seconds})
 
-    if not e % 500:
+    if (e+1 == epochs) or (not e % config["train"]["eval_per_n_epochs"]):
         writer.add_scalar("lr", schedule(e), e)
         writer.add_scalar("reverb_decay", model.reverb.decay.item(), e)
         writer.add_scalar("reverb_wet", model.reverb.wet.item(), e)
@@ -116,16 +136,21 @@ for e in tqdm(range(epochs)):
             best_loss = mean_loss
             torch.save(
                 model.state_dict(),
-                path.join(args.ROOT, args.NAME, "checkpoints", f"state-{step}.pth"),
+                path.join(PATH_CHECKPOINTS, f"state-{e}.pth"),
+            )
+            torch.save(
+                model.state_dict(),
+                path.join(PATH_CHECKPOINTS, f"state-best.pth"),
             )
 
         mean_loss = 0
         n_element = 0
 
-        audio = torch.cat([y, s], -1).reshape(-1).detach().cpu().numpy()
-        
-        sf.write(
-            path.join(args.ROOT, args.NAME, f"eval_{e:08d}.wav"),
-            audio,
-            config["preprocess"]["sampling_rate"],
-        )
+        for b in range(5):
+            audio = torch.cat([y[b, :], s[b, :]], -1).reshape(-1).detach().cpu().numpy()
+
+            sf.write(
+                path.join(args.ROOT, args.NAME, f"eval_{e:06d}-{b:02d}.wav"),
+                audio,
+                config["preprocess"]["sampling_rate"],
+            )

@@ -1,5 +1,6 @@
 data:
-  data_location: /root/buckets/pratik-ddsp2-data/monophonic-4secchunks
+#  data_location: /root/buckets/pratik-ddsp2-data/monophonic-4secchunks # local
+  data_location: /work/gk77/k77021/data/timbre/monophonic-4secchunks #wisteria
   extension: "wav"
 
 preprocess:
@@ -20,3 +21,5 @@ model:
 train:
   scales: [4096, 2048, 1024, 512, 256, 128]
   overlap: .75
+  load_checkpoint: true
+  eval_per_n_epochs: 200

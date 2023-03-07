@@ -1,0 +1,13 @@
+*.log
+*.ckpt
+logs
+logw
+logsw
+sliding
+.git
+assets
+out
+venv
+.idea
+samples
+wandb
