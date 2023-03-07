@@ -93,7 +93,10 @@ for e in tqdm(range(epochs)):
 
         l = (l - mean_loudness) / std_loudness
 
-        y = model(p, l).squeeze(-1)
+        y, harmonic, noise = model(p, l)
+        y = y.squeeze(-1)
+        harmonic = harmonic.squeeze(-1)
+        noise = noise.squeeze(-1)
 
         ori_stft = multiscale_fft(
             s,
@@ -118,14 +121,13 @@ for e in tqdm(range(epochs)):
 
         writer.add_scalar("loss", loss.item(), step)
         wandb.log({"loss": loss.item(),
-                   "step": step,
-                   "seconds_per_step": (datetime.now() - start).seconds
+                   "step": step
                    })
         step += 1
 
         n_element += 1
         mean_loss += (loss.item() - mean_loss) / n_element
-    wandb.log({"seconds_per_epoch": (datetime.now() - start).seconds})
+    wandb.log({"seconds_per_epoch": (datetime.now() - start).total_seconds()})
 
     if (e+1 == epochs) or (not e % config["train"]["eval_per_n_epochs"]):
         writer.add_scalar("lr", schedule(e), e)
@@ -147,7 +149,7 @@ for e in tqdm(range(epochs)):
         n_element = 0
 
         for b in range(5):
-            audio = torch.cat([y[b, :], s[b, :]], -1).reshape(-1).detach().cpu().numpy()
+            audio = torch.cat([y[b, :], s[b, :], harmonic[b, :], noise[b, :]], -1).reshape(-1).detach().cpu().numpy()
 
             sf.write(
                 path.join(args.ROOT, args.NAME, f"eval_{e:06d}-{b:02d}.wav"),
