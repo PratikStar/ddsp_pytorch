@@ -46,6 +46,8 @@ if config["train"]["load_checkpoint"] and path.exists(path.join(PATH_CHECKPOINTS
     print(f"Loading the model from: {path.join(PATH_CHECKPOINTS, 'state-best.pth')}")
     model.load_state_dict(torch.load(path.join(PATH_CHECKPOINTS, "state-best.pth")))
 
+wandb.watch(model, log='all', log_freq=1000, log_graph=True)
+
 # Data related
 dataset = Dataset(config["preprocess"]["out_dir"])
 dataloader = torch.utils.data.DataLoader(
@@ -163,4 +165,4 @@ for e in tqdm(range(epochs)):
                 config["preprocess"]["sampling_rate"],
             )
             wandb.log(
-                {f"eval_{e:06d}-{b:02d}": wandb.Audio(audio, caption=f"Resynthized - original - harmonic - noise - harmonic_plus_noise", sample_rate=config["preprocess"]["sampling_rate"])})
+                {f"eval_{e:06d}-{b:02d}": wandb.Audio(audio, caption=f"Resynth - original - harmonic - noise - harmonic_plus_noise", sample_rate=config["preprocess"]["sampling_rate"])})

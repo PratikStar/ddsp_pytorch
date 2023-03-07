@@ -13,5 +13,5 @@ export HOME=/work/01/gk77/k77021
 #pip install -r requirements.txt
 
 #python preprocess.py
-python train.py --name ddsp-all --steps 100000000 --batch 16
+python train.py --name ddsp-all-noreverb --steps 100000000 --batch 16
 
