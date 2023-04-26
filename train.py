@@ -14,6 +14,7 @@ import numpy as np
 import wandb
 from pathlib import Path
 from datetime import datetime
+from torchsummary import summary
 
 wandb.init(project=f"ddsp-pytorch", entity='auditory-grounding')
 
@@ -46,6 +47,7 @@ if config["train"]["load_checkpoint"] and path.exists(path.join(PATH_CHECKPOINTS
     print(f"Loading the model from: {path.join(PATH_CHECKPOINTS, 'state-best.pth')}")
     model.load_state_dict(torch.load(path.join(PATH_CHECKPOINTS, "state-best.pth")))
 
+summary(model, [(400), (400)])
 wandb.watch(model, log='all', log_freq=1000, log_graph=True)
 
 # Data related

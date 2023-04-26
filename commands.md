@@ -12,5 +12,6 @@ rsync -avz "/Users/pratik/data/timbre" w:/work/gk77/k77021/data
 
 # 3. Files from wisteria
 rsync -av w:/work/gk77/k77021/repos/ddsp_pytorch/runs/ddsp-all "/Users/pratik/Downloads"
+rsync -av w:/work/gk77/k77021/repos/ddsp_pytorch/preprocessed "/Users/pratik/Downloads"
 
 ```
